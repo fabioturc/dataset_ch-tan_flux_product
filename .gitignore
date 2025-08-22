@@ -1,0 +1,12 @@
+*.csv
+*.parquet
+*.png
+*.jpg
+*.xlsx
+data/FLUXES/
+data/MANAGEMENT/
+data/METEO/
+.git/
+.ipynb_checkpoints/
+.Rproj.user
+.Rhistory
