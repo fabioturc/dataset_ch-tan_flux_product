@@ -2,6 +2,7 @@
 *.parquet
 *.png
 *.jpg
+*.pdf
 *.xlsx
 data/FLUXES/
 data/MANAGEMENT/
