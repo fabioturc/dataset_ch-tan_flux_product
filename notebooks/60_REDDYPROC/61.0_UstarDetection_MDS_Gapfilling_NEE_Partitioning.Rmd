@@ -41,7 +41,7 @@ print(run_id)
 
 ## SOURCE FILE
 ```{r}
-file_fluxes_meteo <- "../50_MERGE_DATA_FLUXES/51.2_FluxProcessingChain_L3.3_subset-forREddyProc.csv"
+file_fluxes_meteo <- "../50_MERGE_DATA_FLUXES/51.2_FluxProcessingChain_L3.2_subset-forREddyProc.csv"
 ```
 
 ## DATA FROM FILE
