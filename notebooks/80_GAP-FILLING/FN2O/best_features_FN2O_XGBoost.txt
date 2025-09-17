@@ -1,0 +1,14 @@
+Reco_U50_reddyproc
+n_decay_linear
+n_decay_logistic
+n_decay_lognormal
+n_decay_timed
+timesince_fert
+Reco_U50_reddyproc_roll24hsum
+ts_0.05_gfXG_lag6h_roll12hmean
+ts_0.15_gfXG_lag48h_roll12hmean
+ts_0.3_gfXG_lag48h_roll24hmean
+wfps_0.15_gfXG_lag48h_roll24hmean
+wfps_0.3_gfXG_lag24h_roll24hmean
+wfps_0.3_gfXG_lag48h_roll24hmean
+ts_0.05_gfXG_diff6h
