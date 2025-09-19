@@ -4,6 +4,7 @@
 *.jpg
 *.pdf
 *.xlsx
+*json
 data/FLUXES/
 data/MANAGEMENT/
 data/METEO/
