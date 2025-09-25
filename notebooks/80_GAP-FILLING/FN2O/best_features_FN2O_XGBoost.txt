@@ -3,5 +3,6 @@ timesince_harvest
 timesince_sowing
 n_decay_lognormal
 n_decay_timed
-timesince_fert
-wfps_0.05_gfXG_lag9h
+wfps_0.15_gfXG_lag3h_roll3hmean
+wfps_0.15_gfXG_lag3h_roll9hmean
+id

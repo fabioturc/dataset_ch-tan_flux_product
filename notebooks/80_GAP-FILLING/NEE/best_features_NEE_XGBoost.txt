@@ -1,0 +1,9 @@
+SW_IN_POT
+ppfd
+timesince_harvest
+soil_preparation_timed
+sowing_timed
+n_decay_timed
+ts_0.3_gfXG_roll6hmean
+ts_0.3_gfXG_roll9hmean
+ts_0.3_gfXG_lag9h_roll9hmean
