@@ -4,6 +4,7 @@
 *.jpg
 *.pdf
 *.xlsx
+*.dat
 *json
 data/FLUXES/
 data/MANAGEMENT/

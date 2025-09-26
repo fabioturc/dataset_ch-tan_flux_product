@@ -1,0 +1,9 @@
+timesince_soil_preparation
+timesince_harvest
+timesince_sowing
+n_decay_linear
+n_decay_lognormal
+n_decay_timed
+wfps_0.15_gfXG_lag3h_roll9hmean
+wfps_0.15_gfXG_lag6h_roll3hmean
+id
