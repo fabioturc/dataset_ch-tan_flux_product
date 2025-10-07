@@ -9,6 +9,7 @@
 data/FLUXES/
 data/MANAGEMENT/
 data/METEO/
+notebooks/deprecated/
 .git/
 .ipynb_checkpoints/
 .Rproj.user
