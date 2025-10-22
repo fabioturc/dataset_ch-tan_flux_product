@@ -101,11 +101,12 @@ Seasons defined based on the management events and growing seasons in 2022 and 2
 -   on 311 2023 starts of measurements
 -   on 122 2024 wheat height >  30 cm
 -   on 208 2024 wheat harvested
--   on 91 2025 1st of April set as starting of growing season for the grassland
+-   on 259 2024 grassland established 
+-   on 91  2025 grassland canopy is high
 
 ```{r}
-y <- c(2023, 2024, 2024, 2025)
-s <- c(311, 122, 208, 91)
+y <- c(2023, 2024, 2024, 2024, 2025)
+s <- c(311, 122, 208, 259, 91)
 seasonStarts <- as.data.frame(cbind(s,y))
 seasonFactor <- usCreateSeasonFactorYdayYear(EddyData.F$TIMESTAMP, starts=seasonStarts)
 seasonStartsDate <-fConvertTimeToPosix(data.frame(Year=seasonStarts[, 2],
@@ -120,7 +121,7 @@ print(seasonStartsDate)
 EddyProc.C$sEstimateUstarScenarios(
 
   seasonFactor = seasonFactor,
-  nSample = 100L, # nsample: how many bootstrap samples you want for your data
+  nSample = 200L, # nsample: how many bootstrap samples you want for your data
   probs = c(0.16, 0.5, 0.84)
   )
 
