@@ -11,20 +11,17 @@ file_fluxes_meteo <- "notebooks/80_GAP-FILLING/81_NEE/81.5.2_PartitioningSubsetF
 filedata <- read_csv(file_fluxes_meteo, show_col_types = FALSE)
 
 # SETTINGS----------------------------------------------------------------------
-run_id <- format(Sys.time(), "%Y%m%d",tz="GMT")
 output_path = 'notebooks/80_GAP-FILLING/81_NEE/'
 
 # FUNCTION----------------------------------------------------------------------
 XG_Partition <- function(data, date_start, date_end) {
   
   # record output
-  logf <- file(paste0(output_path, "81.6.1_logfile_PartitioningNEE_XGf-", run_id, ".txt"))
+  logf <- file(paste0(output_path, "81.6.1_logfile_PartitioningNEE_XGf.txt"))
   sink(logf, type = "output", split = TRUE, append = TRUE)
   sink(logf, append=TRUE, type="message")
   
-  # to do: partition NEE from XG gapfilled
-  
-  # start year is included, end year is NOT included
+  # load data
   df_XG <- data %>% 
     select(
       TIMESTAMP_END, 
@@ -34,10 +31,11 @@ XG_Partition <- function(data, date_start, date_end) {
       sw_in,
       ta, 
       rh, 
-      NEE_L3.3_CUT_50_QCF_gfXGBoost_parcelA_all, 
-      NEE_L3.3_CUT_50_QCF_gfXGBoost_parcelA_certain,
-      NEE_L3.3_CUT_50_QCF_gfXGBoost_parcelB_all,
-      NEE_L3.3_CUT_50_QCF_gfXGBoost_parcelB_certain
+      NEE_L3.3_CUT_50_QCF0_gfXGBoost_parcelA_all, 
+      NEE_L3.3_CUT_50_QCF0_gfXGBoost_parcelA_certain,
+      NEE_L3.3_CUT_50_QCF0_gfXGBoost_parcelB_all,
+      NEE_L3.3_CUT_50_QCF0_gfXGBoost_parcelB_certain,
+      NEE_L3.3_CUT_50_QCF0_gfXGBoost_footprint
   )
   
   cat("Data selected \n")
@@ -61,10 +59,11 @@ XG_Partition <- function(data, date_start, date_end) {
   EddyData.F <- EddyData.F %>% 
     mutate(
     TIMESTAMP = df_XG$TIMESTAMP_END,
-    NEE_Amix = as.numeric(as.character(df_XG$NEE_L3.3_CUT_50_QCF_gfXGBoost_parcelA_all)),
-    NEE_Bmix = as.numeric(as.character(df_XG$NEE_L3.3_CUT_50_QCF_gfXGBoost_parcelB_all)),
-    NEE_Acert = as.numeric(as.character(df_XG$NEE_L3.3_CUT_50_QCF_gfXGBoost_parcelA_certain)),
-    NEE_Bcert = as.numeric(as.character(df_XG$NEE_L3.3_CUT_50_QCF_gfXGBoost_parcelB_certain)),
+    NEE_Amix = as.numeric(as.character(df_XG$NEE_L3.3_CUT_50_QCF0_gfXGBoost_parcelA_all)),
+    NEE_Bmix = as.numeric(as.character(df_XG$NEE_L3.3_CUT_50_QCF0_gfXGBoost_parcelB_all)),
+    NEE_Acert = as.numeric(as.character(df_XG$NEE_L3.3_CUT_50_QCF0_gfXGBoost_parcelA_certain)),
+    NEE_Bcert = as.numeric(as.character(df_XG$NEE_L3.3_CUT_50_QCF0_gfXGBoost_parcelB_certain)),
+    NEE_footprint = as.numeric(as.character(df_XG$NEE_L3.3_CUT_50_QCF0_gfXGBoost_footprint)),
     Ustar = as.numeric(as.character(df_XG$USTAR)),
     Rg = as.numeric(as.character(df_XG$sw_in)),
     Tair = as.numeric(as.character(df_XG$ta)),
@@ -87,7 +86,8 @@ XG_Partition <- function(data, date_start, date_end) {
   
   # REddyProc processing
   EddyProc.C <- sEddyProc$new('CH-TAN', EddyData.F,
-                              c('NEE_Amix', 'NEE_Acert', 'NEE_Bmix', 'NEE_Bcert', 'Rg', 'Tair', 'Ustar', 'VPD'),
+                              c('NEE_Amix', 'NEE_Acert', 'NEE_Bmix', 'NEE_Bcert', 'NEE_footprint',
+                                'Rg', 'Tair', 'Ustar', 'VPD'),
                               ColPOSIXTime = "TIMESTAMP")
   EddyProc.C$sSetLocationInfo(LatDeg = 47.480620, LongDeg = 8.911868, TimeZoneHour = 1)
   
@@ -120,6 +120,9 @@ XG_Partition <- function(data, date_start, date_end) {
   
   EddyProc.C$sMDSGapFill('NEE_Bcert', FillAll = TRUE)
   cat("NEE of parcel B (version with gapfilled data where mixed contribution data) gapfilled \n")
+
+  EddyProc.C$sMDSGapFill('NEE_footprint', FillAll = TRUE)
+  cat("NEE of full footprint gapfilled\n")
   
   # Export filled data
   FillEddyData.F <- EddyProc.C$sExportResults()
@@ -137,14 +140,16 @@ XG_Partition <- function(data, date_start, date_end) {
   EddyProc.C$sTKFluxPartition(suffix = "Bmix")
   cat("NEE of parcel B (version including mixed contribution data) TK partitioned \n")
   EddyProc.C$sTKFluxPartition(suffix = "Bcert")
-  cat("NEE of parcel B (version with gapfilled data where mixed contribution data) TK partitioned \n") 
+  cat("NEE of parcel B (version with gapfilled data where mixed contribution data) TK partitioned \n")
+  EddyProc.C$sTKFluxPartition(suffix = "footprint")
+  cat("NEE of full footprint TK partitioned \n") 
 
   # Export partitioned data
   FillTKPartitionEddyData.F <- EddyProc.C$sExportResults()
   FillTKPartitionEddyData.F$TIMESTAMP <- EddyData.F$TIMESTAMP_STRING
   TK_path <- paste0(output_path, "TK_Partition")
   dir.create(TK_path, recursive = TRUE)
-  write.csv(FillTKPartitionEddyData.F, file = paste0(TK_path, "/NEE_XG-GAPF_TK-PART_REddyProc", run_id, ".csv"), row.names = FALSE)
+  write.csv(FillTKPartitionEddyData.F, file = paste0(TK_path, "/NEE_XG-GAPF_TK-PART_REddyProc.csv"), row.names = FALSE)
 
   cat(paste0("Files saved to: ", TK_path, "\n"))
   assign("RFFillTKPartitionEddyData.F", FillTKPartitionEddyData.F, envir = .GlobalEnv)
@@ -152,12 +157,16 @@ XG_Partition <- function(data, date_start, date_end) {
   # Plot TK Results
   EddyProc.C$sPlotFingerprint('GPP_DT_Amix', Dir = TK_path)
   EddyProc.C$sPlotFingerprint('GPP_DT_Acert', Dir = TK_path)
+  EddyProc.C$sPlotFingerprint('GPP_DT_footprint', Dir = TK_path)
   EddyProc.C$sPlotFingerprint('Reco_DT_Amix', Dir = TK_path)
   EddyProc.C$sPlotFingerprint('Reco_DT_Acert', Dir = TK_path)
+  EddyProc.C$sPlotFingerprint('Reco_DT_footprint', Dir = TK_path)
   EddyProc.C$sPlotFingerprint('GPP_DT_Bmix', Dir = TK_path)
   EddyProc.C$sPlotFingerprint('GPP_DT_Bcert', Dir = TK_path)
+  EddyProc.C$sPlotFingerprint('GPP_DT_footprint', Dir = TK_path)
   EddyProc.C$sPlotFingerprint('Reco_DT_Bmix', Dir = TK_path)
   EddyProc.C$sPlotFingerprint('Reco_DT_Bcert', Dir = TK_path)
+  EddyProc.C$sPlotFingerprint('Reco_DT_footprint', Dir = TK_path)
 
   cat("TK Partitioning done \n")
   
@@ -167,19 +176,23 @@ XG_Partition <- function(data, date_start, date_end) {
   
   EddyProc.C$sMRFluxPartition(suffix = 'Amix')
   EddyProc.C$sGLFluxPartition(suffix = 'Amix')
-  cat("NEE of parcel A (version including mixed contribution data) \n")
+  cat("NEE of parcel A (version including mixed contribution data) partitioned\n")
   
   EddyProc.C$sMRFluxPartition(suffix = 'Acert')
   EddyProc.C$sGLFluxPartition(suffix = 'Acert')
-  cat("NEE of parcel A (version with gapfilled data where mixed contribution data) \n")
+  cat("NEE of parcel A (version with gapfilled data where mixed contribution data) partitioned\n")
   
   EddyProc.C$sMRFluxPartition(suffix = 'Bmix')
   EddyProc.C$sGLFluxPartition(suffix = 'Bmix')
-  cat("NEE of parcel B (version including mixed contribution data) \n")
+  cat("NEE of parcel B (version including mixed contribution data) partitioned\n")
   
   EddyProc.C$sMRFluxPartition(suffix = 'Bcert')
   EddyProc.C$sGLFluxPartition(suffix = 'Bcert')
-  cat("NEE of parcel B (version with gapfilled data where mixed contribution data) \n")
+  cat("NEE of parcel B (version with gapfilled data where mixed contribution data) partitioned\n")
+  
+  EddyProc.C$sMRFluxPartition(suffix = 'footprint')
+  EddyProc.C$sGLFluxPartition(suffix = 'footprint')
+  cat("NEE of full footprint partitioned\n")
 
 
   # Export partitioned data
@@ -188,12 +201,16 @@ XG_Partition <- function(data, date_start, date_end) {
   
   Regular_path <- paste0(output_path, "/Regular_Partition")
   dir.create(Regular_path, recursive = TRUE)
-  write.csv(FillPartitionEddyData.F, file = paste0(Regular_path, "/NEE_XG-GAPF_PART_ReddyProc-", run_id, ".csv"), row.names = FALSE)
+  write.csv(FillPartitionEddyData.F, file = paste0(Regular_path, "/NEE_XG-GAPF_PART_ReddyProc.csv"), row.names = FALSE)
 
   cat(paste0("Files saved to: ", Regular_path, "\n"))
   assign("XGFillPartitionEddyData.F", FillPartitionEddyData.F, envir = .GlobalEnv)
 
   # Save fingerprint plots
+  EddyProc.C$sPlotFingerprint('GPP_footprint_f', Dir = Regular_path)
+  EddyProc.C$sPlotFingerprint('GPP_DT_footprint', Dir = Regular_path)
+  EddyProc.C$sPlotFingerprint('Reco_footprint', Dir = Regular_path)
+  EddyProc.C$sPlotFingerprint('Reco_DT_footprint', Dir = Regular_path)
   EddyProc.C$sPlotFingerprint('GPP_Amix_f', Dir = Regular_path)
   EddyProc.C$sPlotFingerprint('GPP_DT_Amix', Dir = Regular_path)
   EddyProc.C$sPlotFingerprint('Reco_Amix', Dir = Regular_path)
@@ -216,5 +233,5 @@ XG_Partition <- function(data, date_start, date_end) {
 }
 
 # RUN FUNCTION------------------------------------------------------------------
-XG_Partition(filedata, '2023-11-08', '2025-06-04')
+XG_Partition(filedata, '2023-11-07', '2025-06-05')
 
