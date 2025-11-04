@@ -61,12 +61,11 @@ Formal class 'data.frame' [package "methods"] with 4 slots
    sFillVPDFromDew, sGetData, sGetEstimatedUstarThresholdDistribution, sGetUstarScenarios,
    sGetUstarSuffixes, sGLFluxPartition, sGLFluxPartitionUStarScens, sMDSGapFill,
    sMDSGapFillAfterUstar, sMDSGapFillAfterUStarDistr, sMDSGapFillUStarScens, sMRFluxPartition,
-   sMRFluxPartitionUStarScens, sPlotDailySums, sPlotDailySumsY, sPlotDiurnalCycle,
-   sPlotFingerprint, sPlotFingerprintY, sPlotHHFluxes, sPlotHHFluxesY,
-   sPlotNEEVersusUStarForSeason, sPrintFrames, sRegrE0fromShortTerm, sRegrRref,
-   sSetLocationInfo, sSetUstarScenarios, sSetUStarSeasons, sTKFluxPartition,
-   sTKFluxPartitionUStarScens, update_ustarthreshold_columns, useAnnualUStarThresholds,
-   useSeaonsalUStarThresholds
+   sMRFluxPartitionUStarScens, sPlotDailySums, sPlotDailySumsY, sPlotDiurnalCycle, sPlotFingerprint,
+   sPlotFingerprintY, sPlotHHFluxes, sPlotHHFluxesY, sPlotNEEVersusUStarForSeason, sPrintFrames,
+   sRegrE0fromShortTerm, sRegrRref, sSetLocationInfo, sSetUstarScenarios, sSetUStarSeasons,
+   sTKFluxPartition, sTKFluxPartitionUStarScens, update_ustarthreshold_columns,
+   useAnnualUStarThresholds, useSeaonsalUStarThresholds
  NULL
 NULL
 [1] "2023-11-06 23:15:00 UTC" "2023-11-06 23:45:00 UTC" "2023-11-07 00:15:00 UTC"
@@ -118,7 +117,7 @@ Look up table with window size of 7 days with Rg
 12
 Mean diurnal course with window size of 0 days: .
 7
-Finished gap filling of 'NEE_Amix' in 24 seconds. Artificial gaps filled: 27646, real gaps filled: 50, unfilled (long) gaps: 0.
+Finished gap filling of 'NEE_Amix' in 22 seconds. Artificial gaps filled: 27646, real gaps filled: 50, unfilled (long) gaps: 0.
 NEE of parcel A (version including mixed contribution data) gapfilled 
 Initialized variable 'NEE_Acert' with 50 real gaps for gap filling of all 27646 values (to estimate uncertainties).
 Full MDS algorithm for gap filling of 'NEE_Acert' with LUT(Rg, VPD, Tair) and MDC.
@@ -134,7 +133,7 @@ Look up table with window size of 7 days with Rg
 12
 Mean diurnal course with window size of 0 days: .
 7
-Finished gap filling of 'NEE_Acert' in 21 seconds. Artificial gaps filled: 27646, real gaps filled: 50, unfilled (long) gaps: 0.
+Finished gap filling of 'NEE_Acert' in 38 seconds. Artificial gaps filled: 27646, real gaps filled: 50, unfilled (long) gaps: 0.
 NEE of parcel A (version with gapfilled data where mixed contribution data) gapfilled 
 Initialized variable 'NEE_Bmix' with 50 real gaps for gap filling of all 27646 values (to estimate uncertainties).
 Full MDS algorithm for gap filling of 'NEE_Bmix' with LUT(Rg, VPD, Tair) and MDC.
@@ -150,7 +149,7 @@ Look up table with window size of 7 days with Rg
 12
 Mean diurnal course with window size of 0 days: .
 7
-Finished gap filling of 'NEE_Bmix' in 23 seconds. Artificial gaps filled: 27646, real gaps filled: 50, unfilled (long) gaps: 0.
+Finished gap filling of 'NEE_Bmix' in 30 seconds. Artificial gaps filled: 27646, real gaps filled: 50, unfilled (long) gaps: 0.
 NEE of parcel B (version including mixed contribution data) gapfilled 
 Initialized variable 'NEE_Bcert' with 50 real gaps for gap filling of all 27646 values (to estimate uncertainties).
 Full MDS algorithm for gap filling of 'NEE_Bcert' with LUT(Rg, VPD, Tair) and MDC.
@@ -166,7 +165,7 @@ Look up table with window size of 7 days with Rg
 12
 Mean diurnal course with window size of 0 days: .
 7
-Finished gap filling of 'NEE_Bcert' in 23 seconds. Artificial gaps filled: 27646, real gaps filled: 50, unfilled (long) gaps: 0.
+Finished gap filling of 'NEE_Bcert' in 29 seconds. Artificial gaps filled: 27646, real gaps filled: 50, unfilled (long) gaps: 0.
 NEE of parcel B (version with gapfilled data where mixed contribution data) gapfilled 
 Initialized variable 'NEE_footprint' with 50 real gaps for gap filling of all 27646 values (to estimate uncertainties).
 Full MDS algorithm for gap filling of 'NEE_footprint' with LUT(Rg, VPD, Tair) and MDC.
@@ -182,7 +181,7 @@ Look up table with window size of 7 days with Rg
 12
 Mean diurnal course with window size of 0 days: .
 7
-Finished gap filling of 'NEE_footprint' in 29 seconds. Artificial gaps filled: 27646, real gaps filled: 50, unfilled (long) gaps: 0.
+Finished gap filling of 'NEE_footprint' in 24 seconds. Artificial gaps filled: 27646, real gaps filled: 50, unfilled (long) gaps: 0.
 NEE of full footprint gapfilled
 Start TK partitioning 
 Start daytime flux partitioning for variable NEE_Amix_f with temperature Tair_f.
@@ -241,7 +240,7 @@ Saved plot to: notebooks/80_GAP-FILLING/81_NEE/TK_Partition/CH-TAN_23-25_FP_Reco
 TK Partitioning done 
 Start Regular partitioning 
 Start flux partitioning for variable NEE_Amix_f with temperature Tair_f.
-Estimate of the temperature sensitivity E_0 from short term data: 98.66.
+Estimate of the temperature sensitivity E_0 from short term data: 103.13.
 Regression of reference temperature R_ref for 143 periods.
 Start daytime flux partitioning for variable NEE_Amix_f with temperature Tair_f.
   Estimating temperature sensitivity from night time NEE , 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117, 119, 121, 123, 125, 127, 129, 131, 133, 135, 137, 139, 141, 143, 145, 147, 149, 151, 153, 155, 157, 159, 161, 163, 165, 167, 169, 171, 173, 175, 177, 179, 181, 183, 185, 187, 189, 191, 193, 195, 197, 199, 201, 203, 205, 207, 209, 211, 213, 215, 217, 219, 221, 223, 225, 227, 229, 231, 233, 235, 237, 239, 241, 243, 245, 247, 249, 251, 253, 255, 257, 259, 261, 263, 265, 267, 269, 271, 273, 275, 277, 279, 281, 283, 285, 287, 289, 291, 293, 295, 297, 299, 301, 303, 305, 307, 309, 311, 313, 315, 317, 319, 321, 323, 325, 327, 329, 331, 333, 335, 337, 339, 341, 343, 345, 347, 349, 351, 353, 355, 357, 359, 361, 363, 365, 367, 369, 371, 373, 375, 377, 379, 381, 383, 385, 387, 389, 391, 393, 395, 397, 399, 401, 403, 405, 407, 409, 411, 413, 415, 417, 419, 421, 423, 425, 427, 429, 431, 433, 435, 437, 439, 441, 443, 445, 447, 449, 451, 453, 455, 457, 459, 461, 463, 465, 467, 469, 471, 473, 475, 477, 479, 481, 483, 485, 487, 489, 491, 493, 495, 497, 499, 501, 503, 505, 507, 509, 511, 513, 515, 517, 519, 521, 523, 525, 527, 529, 531, 533, 535, 537, 539, 541, 543, 545, 547, 549, 551, 553, 555, 557, 559, 561, 563, 565, 567, 569, 571, 573
@@ -252,7 +251,7 @@ Start daytime flux partitioning for variable NEE_Amix_f with temperature Tair_f.
   Estimating light response curve parameters from day time NEE , 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117, 119, 121, 123, 125, 127, 129, 131, 133, 135, 137, 139, 141, 143, 145, 147, 149, 151, 153, 155, 157, 159, 161, 163, 165, 167, 169, 171, 173, 175, 177, 179, 181, 183, 185, 187, 189, 191, 193, 195, 197, 199, 201, 203, 205, 207, 209, 211, 213, 215, 217, 219, 221, 223, 225, 227, 229, 231, 233, 235, 237, 239, 241, 243, 245, 247, 249, 251, 253, 255, 257, 259, 261, 263, 265, 267, 269, 271, 273, 275, 277, 279, 281, 283, 285, 287, 289, 291, 293, 295, 297, 299, 301, 303, 305, 307, 309, 311, 313, 315, 317, 319, 321, 323, 325, 327, 329, 331, 333, 335, 337, 339, 341, 343, 345, 347, 349, 351, 353, 355, 357, 359, 361, 363, 365, 367, 369, 371, 373, 375, 377, 379, 381, 383, 385, 387, 389, 391, 393, 395, 397, 399, 401, 403, 405, 407, 409, 411, 413, 415, 417, 419, 421, 423, 425, 427, 429, 431, 433, 435, 437, 439, 441, 443, 445, 447, 449, 451, 453, 455, 457, 459, 461, 463, 465, 467, 469, 471, 473, 475, 477, 479, 481, 483, 485, 487, 489, 491, 493, 495, 497, 499, 501, 503, 505, 507, 509, 511, 513, 515, 517, 519, 521, 523, 525, 527, 529, 531, 533, 535, 537, 539, 541, 543, 545, 547, 549, 551, 553, 555, 557, 559, 561, 563, 565, 567, 569, 571, 573
 NEE of parcel A (version including mixed contribution data) partitioned
 Start flux partitioning for variable NEE_Acert_f with temperature Tair_f.
-Estimate of the temperature sensitivity E_0 from short term data: 98.66.
+Estimate of the temperature sensitivity E_0 from short term data: 103.13.
 Regression of reference temperature R_ref for 143 periods.
 Start daytime flux partitioning for variable NEE_Acert_f with temperature Tair_f.
   Estimating temperature sensitivity from night time NEE , 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117, 119, 121, 123, 125, 127, 129, 131, 133, 135, 137, 139, 141, 143, 145, 147, 149, 151, 153, 155, 157, 159, 161, 163, 165, 167, 169, 171, 173, 175, 177, 179, 181, 183, 185, 187, 189, 191, 193, 195, 197, 199, 201, 203, 205, 207, 209, 211, 213, 215, 217, 219, 221, 223, 225, 227, 229, 231, 233, 235, 237, 239, 241, 243, 245, 247, 249, 251, 253, 255, 257, 259, 261, 263, 265, 267, 269, 271, 273, 275, 277, 279, 281, 283, 285, 287, 289, 291, 293, 295, 297, 299, 301, 303, 305, 307, 309, 311, 313, 315, 317, 319, 321, 323, 325, 327, 329, 331, 333, 335, 337, 339, 341, 343, 345, 347, 349, 351, 353, 355, 357, 359, 361, 363, 365, 367, 369, 371, 373, 375, 377, 379, 381, 383, 385, 387, 389, 391, 393, 395, 397, 399, 401, 403, 405, 407, 409, 411, 413, 415, 417, 419, 421, 423, 425, 427, 429, 431, 433, 435, 437, 439, 441, 443, 445, 447, 449, 451, 453, 455, 457, 459, 461, 463, 465, 467, 469, 471, 473, 475, 477, 479, 481, 483, 485, 487, 489, 491, 493, 495, 497, 499, 501, 503, 505, 507, 509, 511, 513, 515, 517, 519, 521, 523, 525, 527, 529, 531, 533, 535, 537, 539, 541, 543, 545, 547, 549, 551, 553, 555, 557, 559, 561, 563, 565, 567, 569, 571, 573
@@ -263,7 +262,7 @@ Start daytime flux partitioning for variable NEE_Acert_f with temperature Tair_f
   Estimating light response curve parameters from day time NEE , 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117, 119, 121, 123, 125, 127, 129, 131, 133, 135, 137, 139, 141, 143, 145, 147, 149, 151, 153, 155, 157, 159, 161, 163, 165, 167, 169, 171, 173, 175, 177, 179, 181, 183, 185, 187, 189, 191, 193, 195, 197, 199, 201, 203, 205, 207, 209, 211, 213, 215, 217, 219, 221, 223, 225, 227, 229, 231, 233, 235, 237, 239, 241, 243, 245, 247, 249, 251, 253, 255, 257, 259, 261, 263, 265, 267, 269, 271, 273, 275, 277, 279, 281, 283, 285, 287, 289, 291, 293, 295, 297, 299, 301, 303, 305, 307, 309, 311, 313, 315, 317, 319, 321, 323, 325, 327, 329, 331, 333, 335, 337, 339, 341, 343, 345, 347, 349, 351, 353, 355, 357, 359, 361, 363, 365, 367, 369, 371, 373, 375, 377, 379, 381, 383, 385, 387, 389, 391, 393, 395, 397, 399, 401, 403, 405, 407, 409, 411, 413, 415, 417, 419, 421, 423, 425, 427, 429, 431, 433, 435, 437, 439, 441, 443, 445, 447, 449, 451, 453, 455, 457, 459, 461, 463, 465, 467, 469, 471, 473, 475, 477, 479, 481, 483, 485, 487, 489, 491, 493, 495, 497, 499, 501, 503, 505, 507, 509, 511, 513, 515, 517, 519, 521, 523, 525, 527, 529, 531, 533, 535, 537, 539, 541, 543, 545, 547, 549, 551, 553, 555, 557, 559, 561, 563, 565, 567, 569, 571, 573
 NEE of parcel A (version with gapfilled data where mixed contribution data) partitioned
 Start flux partitioning for variable NEE_Bmix_f with temperature Tair_f.
-Estimate of the temperature sensitivity E_0 from short term data: 98.66.
+Estimate of the temperature sensitivity E_0 from short term data: 103.13.
 Regression of reference temperature R_ref for 143 periods.
 Start daytime flux partitioning for variable NEE_Bmix_f with temperature Tair_f.
   Estimating temperature sensitivity from night time NEE , 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117, 119, 121, 123, 125, 127, 129, 131, 133, 135, 137, 139, 141, 143, 145, 147, 149, 151, 153, 155, 157, 159, 161, 163, 165, 167, 169, 171, 173, 175, 177, 179, 181, 183, 185, 187, 189, 191, 193, 195, 197, 199, 201, 203, 205, 207, 209, 211, 213, 215, 217, 219, 221, 223, 225, 227, 229, 231, 233, 235, 237, 239, 241, 243, 245, 247, 249, 251, 253, 255, 257, 259, 261, 263, 265, 267, 269, 271, 273, 275, 277, 279, 281, 283, 285, 287, 289, 291, 293, 295, 297, 299, 301, 303, 305, 307, 309, 311, 313, 315, 317, 319, 321, 323, 325, 327, 329, 331, 333, 335, 337, 339, 341, 343, 345, 347, 349, 351, 353, 355, 357, 359, 361, 363, 365, 367, 369, 371, 373, 375, 377, 379, 381, 383, 385, 387, 389, 391, 393, 395, 397, 399, 401, 403, 405, 407, 409, 411, 413, 415, 417, 419, 421, 423, 425, 427, 429, 431, 433, 435, 437, 439, 441, 443, 445, 447, 449, 451, 453, 455, 457, 459, 461, 463, 465, 467, 469, 471, 473, 475, 477, 479, 481, 483, 485, 487, 489, 491, 493, 495, 497, 499, 501, 503, 505, 507, 509, 511, 513, 515, 517, 519, 521, 523, 525, 527, 529, 531, 533, 535, 537, 539, 541, 543, 545, 547, 549, 551, 553, 555, 557, 559, 561, 563, 565, 567, 569, 571, 573
@@ -274,7 +273,7 @@ Start daytime flux partitioning for variable NEE_Bmix_f with temperature Tair_f.
   Estimating light response curve parameters from day time NEE , 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117, 119, 121, 123, 125, 127, 129, 131, 133, 135, 137, 139, 141, 143, 145, 147, 149, 151, 153, 155, 157, 159, 161, 163, 165, 167, 169, 171, 173, 175, 177, 179, 181, 183, 185, 187, 189, 191, 193, 195, 197, 199, 201, 203, 205, 207, 209, 211, 213, 215, 217, 219, 221, 223, 225, 227, 229, 231, 233, 235, 237, 239, 241, 243, 245, 247, 249, 251, 253, 255, 257, 259, 261, 263, 265, 267, 269, 271, 273, 275, 277, 279, 281, 283, 285, 287, 289, 291, 293, 295, 297, 299, 301, 303, 305, 307, 309, 311, 313, 315, 317, 319, 321, 323, 325, 327, 329, 331, 333, 335, 337, 339, 341, 343, 345, 347, 349, 351, 353, 355, 357, 359, 361, 363, 365, 367, 369, 371, 373, 375, 377, 379, 381, 383, 385, 387, 389, 391, 393, 395, 397, 399, 401, 403, 405, 407, 409, 411, 413, 415, 417, 419, 421, 423, 425, 427, 429, 431, 433, 435, 437, 439, 441, 443, 445, 447, 449, 451, 453, 455, 457, 459, 461, 463, 465, 467, 469, 471, 473, 475, 477, 479, 481, 483, 485, 487, 489, 491, 493, 495, 497, 499, 501, 503, 505, 507, 509, 511, 513, 515, 517, 519, 521, 523, 525, 527, 529, 531, 533, 535, 537, 539, 541, 543, 545, 547, 549, 551, 553, 555, 557, 559, 561, 563, 565, 567, 569, 571, 573
 NEE of parcel B (version including mixed contribution data) partitioned
 Start flux partitioning for variable NEE_Bcert_f with temperature Tair_f.
-Estimate of the temperature sensitivity E_0 from short term data: 98.66.
+Estimate of the temperature sensitivity E_0 from short term data: 103.13.
 Regression of reference temperature R_ref for 143 periods.
 Start daytime flux partitioning for variable NEE_Bcert_f with temperature Tair_f.
   Estimating temperature sensitivity from night time NEE , 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117, 119, 121, 123, 125, 127, 129, 131, 133, 135, 137, 139, 141, 143, 145, 147, 149, 151, 153, 155, 157, 159, 161, 163, 165, 167, 169, 171, 173, 175, 177, 179, 181, 183, 185, 187, 189, 191, 193, 195, 197, 199, 201, 203, 205, 207, 209, 211, 213, 215, 217, 219, 221, 223, 225, 227, 229, 231, 233, 235, 237, 239, 241, 243, 245, 247, 249, 251, 253, 255, 257, 259, 261, 263, 265, 267, 269, 271, 273, 275, 277, 279, 281, 283, 285, 287, 289, 291, 293, 295, 297, 299, 301, 303, 305, 307, 309, 311, 313, 315, 317, 319, 321, 323, 325, 327, 329, 331, 333, 335, 337, 339, 341, 343, 345, 347, 349, 351, 353, 355, 357, 359, 361, 363, 365, 367, 369, 371, 373, 375, 377, 379, 381, 383, 385, 387, 389, 391, 393, 395, 397, 399, 401, 403, 405, 407, 409, 411, 413, 415, 417, 419, 421, 423, 425, 427, 429, 431, 433, 435, 437, 439, 441, 443, 445, 447, 449, 451, 453, 455, 457, 459, 461, 463, 465, 467, 469, 471, 473, 475, 477, 479, 481, 483, 485, 487, 489, 491, 493, 495, 497, 499, 501, 503, 505, 507, 509, 511, 513, 515, 517, 519, 521, 523, 525, 527, 529, 531, 533, 535, 537, 539, 541, 543, 545, 547, 549, 551, 553, 555, 557, 559, 561, 563, 565, 567, 569, 571, 573
@@ -285,7 +284,7 @@ Start daytime flux partitioning for variable NEE_Bcert_f with temperature Tair_f
   Estimating light response curve parameters from day time NEE , 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117, 119, 121, 123, 125, 127, 129, 131, 133, 135, 137, 139, 141, 143, 145, 147, 149, 151, 153, 155, 157, 159, 161, 163, 165, 167, 169, 171, 173, 175, 177, 179, 181, 183, 185, 187, 189, 191, 193, 195, 197, 199, 201, 203, 205, 207, 209, 211, 213, 215, 217, 219, 221, 223, 225, 227, 229, 231, 233, 235, 237, 239, 241, 243, 245, 247, 249, 251, 253, 255, 257, 259, 261, 263, 265, 267, 269, 271, 273, 275, 277, 279, 281, 283, 285, 287, 289, 291, 293, 295, 297, 299, 301, 303, 305, 307, 309, 311, 313, 315, 317, 319, 321, 323, 325, 327, 329, 331, 333, 335, 337, 339, 341, 343, 345, 347, 349, 351, 353, 355, 357, 359, 361, 363, 365, 367, 369, 371, 373, 375, 377, 379, 381, 383, 385, 387, 389, 391, 393, 395, 397, 399, 401, 403, 405, 407, 409, 411, 413, 415, 417, 419, 421, 423, 425, 427, 429, 431, 433, 435, 437, 439, 441, 443, 445, 447, 449, 451, 453, 455, 457, 459, 461, 463, 465, 467, 469, 471, 473, 475, 477, 479, 481, 483, 485, 487, 489, 491, 493, 495, 497, 499, 501, 503, 505, 507, 509, 511, 513, 515, 517, 519, 521, 523, 525, 527, 529, 531, 533, 535, 537, 539, 541, 543, 545, 547, 549, 551, 553, 555, 557, 559, 561, 563, 565, 567, 569, 571, 573
 NEE of parcel B (version with gapfilled data where mixed contribution data) partitioned
 Start flux partitioning for variable NEE_footprint_f with temperature Tair_f.
-Estimate of the temperature sensitivity E_0 from short term data: 98.66.
+Estimate of the temperature sensitivity E_0 from short term data: 103.13.
 Regression of reference temperature R_ref for 143 periods.
 Start daytime flux partitioning for variable NEE_footprint_f with temperature Tair_f.
   Estimating temperature sensitivity from night time NEE , 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117, 119, 121, 123, 125, 127, 129, 131, 133, 135, 137, 139, 141, 143, 145, 147, 149, 151, 153, 155, 157, 159, 161, 163, 165, 167, 169, 171, 173, 175, 177, 179, 181, 183, 185, 187, 189, 191, 193, 195, 197, 199, 201, 203, 205, 207, 209, 211, 213, 215, 217, 219, 221, 223, 225, 227, 229, 231, 233, 235, 237, 239, 241, 243, 245, 247, 249, 251, 253, 255, 257, 259, 261, 263, 265, 267, 269, 271, 273, 275, 277, 279, 281, 283, 285, 287, 289, 291, 293, 295, 297, 299, 301, 303, 305, 307, 309, 311, 313, 315, 317, 319, 321, 323, 325, 327, 329, 331, 333, 335, 337, 339, 341, 343, 345, 347, 349, 351, 353, 355, 357, 359, 361, 363, 365, 367, 369, 371, 373, 375, 377, 379, 381, 383, 385, 387, 389, 391, 393, 395, 397, 399, 401, 403, 405, 407, 409, 411, 413, 415, 417, 419, 421, 423, 425, 427, 429, 431, 433, 435, 437, 439, 441, 443, 445, 447, 449, 451, 453, 455, 457, 459, 461, 463, 465, 467, 469, 471, 473, 475, 477, 479, 481, 483, 485, 487, 489, 491, 493, 495, 497, 499, 501, 503, 505, 507, 509, 511, 513, 515, 517, 519, 521, 523, 525, 527, 529, 531, 533, 535, 537, 539, 541, 543, 545, 547, 549, 551, 553, 555, 557, 559, 561, 563, 565, 567, 569, 571, 573
