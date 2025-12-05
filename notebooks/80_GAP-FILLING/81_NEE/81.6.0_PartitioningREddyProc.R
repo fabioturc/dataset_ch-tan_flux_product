@@ -130,49 +130,8 @@ XG_Partition <- function(data, date_start, date_end) {
 
   assign("XGFillEddyData.F", FillEddyData.F, envir = .GlobalEnv)
   
-
-  # New TK Partitioning first
-  cat("Start TK partitioning \n")
-  EddyProc.C$sTKFluxPartition(suffix = "Amix")
-  cat("NEE of parcel A (version including mixed contribution data) TK partitioned \n")
-  EddyProc.C$sTKFluxPartition(suffix = "Acert")
-  cat("NEE of parcel A (version with gapfilled data where mixed contribution data) TK partitioned \n") 
-  EddyProc.C$sTKFluxPartition(suffix = "Bmix")
-  cat("NEE of parcel B (version including mixed contribution data) TK partitioned \n")
-  EddyProc.C$sTKFluxPartition(suffix = "Bcert")
-  cat("NEE of parcel B (version with gapfilled data where mixed contribution data) TK partitioned \n")
-  EddyProc.C$sTKFluxPartition(suffix = "footprint")
-  cat("NEE of full footprint TK partitioned \n") 
-
-  # Export partitioned data
-  FillTKPartitionEddyData.F <- EddyProc.C$sExportResults()
-  FillTKPartitionEddyData.F$TIMESTAMP <- EddyData.F$TIMESTAMP_STRING
-  TK_path <- paste0(output_path, "TK_Partition")
-  dir.create(TK_path, recursive = TRUE)
-  write.csv(FillTKPartitionEddyData.F, file = paste0(TK_path, "/NEE_XG-GAPF_TK-PART_REddyProc.csv"), row.names = FALSE)
-
-  cat(paste0("Files saved to: ", TK_path, "\n"))
-  assign("RFFillTKPartitionEddyData.F", FillTKPartitionEddyData.F, envir = .GlobalEnv)
-
-  # Plot TK Results
-  EddyProc.C$sPlotFingerprint('GPP_DT_Amix', Dir = TK_path)
-  EddyProc.C$sPlotFingerprint('GPP_DT_Acert', Dir = TK_path)
-  EddyProc.C$sPlotFingerprint('GPP_DT_footprint', Dir = TK_path)
-  EddyProc.C$sPlotFingerprint('Reco_DT_Amix', Dir = TK_path)
-  EddyProc.C$sPlotFingerprint('Reco_DT_Acert', Dir = TK_path)
-  EddyProc.C$sPlotFingerprint('Reco_DT_footprint', Dir = TK_path)
-  EddyProc.C$sPlotFingerprint('GPP_DT_Bmix', Dir = TK_path)
-  EddyProc.C$sPlotFingerprint('GPP_DT_Bcert', Dir = TK_path)
-  EddyProc.C$sPlotFingerprint('GPP_DT_footprint', Dir = TK_path)
-  EddyProc.C$sPlotFingerprint('Reco_DT_Bmix', Dir = TK_path)
-  EddyProc.C$sPlotFingerprint('Reco_DT_Bcert', Dir = TK_path)
-  EddyProc.C$sPlotFingerprint('Reco_DT_footprint', Dir = TK_path)
-
-  cat("TK Partitioning done \n")
-  
-  
-  # Regular Partitioning
-  cat("Start Regular partitioning \n")
+  # Partitioning
+  cat("Start partitioning \n")
   
   EddyProc.C$sMRFluxPartition(suffix = 'Amix')
   EddyProc.C$sGLFluxPartition(suffix = 'Amix')
@@ -199,11 +158,11 @@ XG_Partition <- function(data, date_start, date_end) {
   FillPartitionEddyData.F <- EddyProc.C$sExportResults()
   FillPartitionEddyData.F$TIMESTAMP <- EddyData.F$TIMESTAMP_STRING
   
-  Regular_path <- paste0(output_path, "/Regular_Partition")
-  dir.create(Regular_path, recursive = TRUE)
-  write.csv(FillPartitionEddyData.F, file = paste0(Regular_path, "/NEE_XG-GAPF_PART_ReddyProc.csv"), row.names = FALSE)
+  Partition_path <- paste0(output_path, "/Partition")
+  dir.create(Partition_path, recursive = TRUE)
+  write.csv(FillPartitionEddyData.F, file = paste0(Partition_path, "/NEE_XG-GAPF_PART_ReddyProc.csv"), row.names = FALSE)
 
-  cat(paste0("Files saved to: ", Regular_path, "\n"))
+  cat(paste0("Files saved to: ", Partition_path, "\n"))
   assign("XGFillPartitionEddyData.F", FillPartitionEddyData.F, envir = .GlobalEnv)
 
   # Save fingerprint plots
