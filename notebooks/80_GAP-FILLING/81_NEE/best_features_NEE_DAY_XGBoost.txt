@@ -1,8 +1,0 @@
-SW_IN_POT
-ppfd
-ts_0.3_gfXG
-timesince_harvest
-ts_0.3_gfXG_roll3hmean
-ts_0.3_gfXG_roll6hmean
-ts_0.3_gfXG_lag9h_roll9hmean
-id

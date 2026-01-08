@@ -1,0 +1,12 @@
+wfps_0.05_gfXG
+timesince_soil_preparation
+n_decay_linear
+n_decay_logistic
+n_decay_lognormal
+GPP_NT_CUT_50_gfXG_QCF_lag24h
+ts_0.3_gfXG_lag24h
+wfps_0.15_gfXG_lag16h
+wfps_0.3_gfXG_lag16h
+ts_0.05_gfXG_diff8h
+wfps_0.05_gfXG_diff16h
+wfps_0.15_gfXG_diff24h
