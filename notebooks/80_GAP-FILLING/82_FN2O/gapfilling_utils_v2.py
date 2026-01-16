@@ -3,15 +3,7 @@ gapfilling_utils_v2.py
 
 Utilities for EC flux gapfilling + uncertainty attachment.
 
-Design goals vs gapfilling_utils.py:
-- Keep the public API you already use in 82.4.0_GapFilling.ipynb:
-  setup_log_transform, undersample_target, create_block_splits, plot_cv_splits, crossval_evaluate
-- Make plotting functions return fig/axes (and optionally show) consistently.
-- Make CV + OOF prediction helpers reusable for uncertainty estimation.
-- Fix a few correctness traps in the "fit/apply" convenience pipeline.
-- Reduce hidden side-effects (unconditional prints) via `verbose=` flags.
-
-Core uncertainty idea (unchanged):
+Core uncertainty idea:
 - Observed half-hours: use EddyPro random uncertainty (rand_err) as sigma_ec(t).
 - Gapfilled half-hours: build sigma_gf(t) from
     (a) ensemble spread of the ML model (sigma_ens(t))
@@ -228,6 +220,87 @@ def undersample_target(
         plt.show()
 
     return out, cutoff_value
+
+
+def infer_cv_block_size_from_gaps(
+    s: pd.Series,
+    *,
+    quantile: float = 0.8,
+    fallback: int = 6,
+) -> int:
+    """
+    Infer a reasonable CV block_size (in records) from the distribution of
+    consecutive NaN gaps in the target series `s`.
+
+    Uses the `quantile` of gap lengths
+    If there are no gaps, returns `fallback`.
+    """
+    if not (0.0 < quantile < 1.0):
+        raise ValueError('quantile must be in (0, 1)')
+
+    isna = s.isna()
+    if not bool(isna.any()):
+        return int(fallback)
+
+    run_id = isna.ne(isna.shift()).cumsum()
+    run_isna = isna.groupby(run_id).first()
+    run_len = isna.groupby(run_id).size()
+    gaps = run_len[run_isna]
+
+    if gaps.empty:
+        return int(fallback)
+
+    qv = float(gaps.quantile(quantile))
+    return int(max(1, int(np.ceil(qv))))
+
+
+# -----------------------------------------------------------------------------
+# Parcel / dataset assembly helpers
+# -----------------------------------------------------------------------------
+
+def build_df_for_parcel(data_main, target_flux, letter, selected_features, add_trt):
+    """
+    Strict parcel dataframe builder (crashes on missing features).
+
+    For each feature f in selected_features (except 'trt'):
+      - use f_parcelA/B if present, else use shared f
+      - if neither exists -> raise KeyError
+
+    If add_trt and 'trt' in selected_features:
+      - set trt = 0 for A, 1 for B
+
+    Additionally, for any columns whose name starts with `target_flux`,
+    keep values only in rows where parcel == letter (else NaN).
+    """
+    import pandas as pd
+
+    if "parcel" not in data_main.columns:
+        raise KeyError("data_main must contain a 'parcel' column for masking.")
+
+    cols = set(data_main.columns)
+    df = pd.DataFrame(index=data_main.index)
+
+    for f in selected_features:
+        if f == "trt":
+            continue
+
+        fp = f"{f}_parcel{letter}"
+        if fp in cols:
+            df[f] = data_main[fp]
+        elif f in cols:
+            df[f] = data_main[f]
+        else:
+            raise KeyError(f"Missing feature '{f}' (neither '{fp}' nor '{f}' exists).")
+
+    if add_trt and "trt" in selected_features:
+        df["trt"] = 0 if letter == "A" else 1
+
+    mask = data_main["parcel"].eq(letter)
+    flux_cols = [c for c in data_main.columns if c.startswith(target_flux)]
+    if flux_cols:
+        df[flux_cols] = data_main[flux_cols].where(mask)
+
+    return df
 
 
 # -----------------------------------------------------------------------------
@@ -669,7 +742,9 @@ def fit_gapfill_ts(
     undersample_quantile: float = 0.8,
     undersample_fraction: float = 0.5,
     cv_split: float = 0.1,
-    cv_block_size: int = 12,
+    cv_block_size: Optional[int] = None,
+    cv_block_quantile: float = 0.8,
+    cv_block_fallback: int = 6,
     random_state: int = 42,
     n_ens: int = 50,
     ens_block_len: int = 48,
@@ -722,6 +797,15 @@ def fit_gapfill_ts(
 
     X_tr = df_train[feature_cols].copy()
     y_tr = pd.Series(df_train["_y_train"].to_numpy(float), index=df_train.index)
+
+    if cv_block_size is None:
+        cv_block_size = infer_cv_block_size_from_gaps(
+            out[target_col],
+            quantile=cv_block_quantile,
+            fallback=cv_block_fallback,
+        )
+        if verbose:
+            print(f"Inferred cv_block_size={cv_block_size} from gap lengths (q={cv_block_quantile:.2f}).")
 
     splits = create_block_splits(
         X_tr,
