@@ -20,7 +20,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Callable, Iterable, List, Optional, Sequence, Tuple, Dict, Any
-
 import numpy as np
 import pandas as pd
 
@@ -197,8 +196,8 @@ def undersample_target(
     # keep index (and any other columns) intact
     lower_sampled = lower.sample(frac=fraction, random_state=random_state)
 
-    # shuffle for model training convenience, then restore chronological order
-    out = pd.concat([upper, lower_sampled], axis=0).sample(frac=1, random_state=random_state).sort_index()
+    # Concatenate and restore chronological order
+    out = pd.concat([upper, lower_sampled], axis=0).sort_index()
 
     if verbose:
         kept = len(out)
@@ -272,7 +271,6 @@ def build_df_for_parcel(data_main, target_flux, letter, selected_features, add_t
     Additionally, for any columns whose name starts with `target_flux`,
     keep values only in rows where parcel == letter (else NaN).
     """
-    import pandas as pd
 
     if "parcel" not in data_main.columns:
         raise KeyError("data_main must contain a 'parcel' column for masking.")
@@ -719,6 +717,7 @@ class GapfillFit:
     feature_cols: List[str]
     model_factory: Callable[[], object]
     model_final: object
+    ensemble_models: List[object]   # store trained ensemble models here
     X_tr: pd.DataFrame
     y_tr: pd.Series                 # training scale (log or raw)
     y_raw: pd.Series                # raw physical units
@@ -757,7 +756,8 @@ def fit_gapfill_ts(
     """
     Fit a final model + uncertainty components for time-series gapfilling.
 
-    Important: training uses only rows where target and all predictors are present.
+    Optimized: Trains the ensemble models ONCE here and stores them, 
+    rather than retraining them during every prediction call.
     """
     _check_columns(df, [target_col] + list(feature_cols), name="df")
 
@@ -826,14 +826,34 @@ def fit_gapfill_ts(
         min_per_bin=resid_min_per_bin,
     )
 
+    # 1. Fit Final Model
+    if verbose:
+        print("Fitting final model...")
     m_final = model_factory()
     m_final.fit(X_tr, y_tr)
+
+    # 2. Fit Ensemble Models
+    if verbose:
+        print(f"Training ensemble of {n_ens} models for uncertainty estimation...")
+    
+    ensemble_models = []
+    rng = np.random.default_rng(random_state)
+    n_samples = len(X_tr)
+    
+    for i in range(n_ens):
+        # Generate bootstrap indices
+        idx = block_bootstrap_indices(n=n_samples, block_len=ens_block_len, rng=rng)
+        # Fit and store
+        m = model_factory()
+        m.fit(X_tr.iloc[idx], y_tr.iloc[idx])
+        ensemble_models.append(m)
 
     return GapfillFit(
         target_col=target_col,
         feature_cols=list(feature_cols),
         model_factory=model_factory,
         model_final=m_final,
+        ensemble_models=ensemble_models,  # Stored here
         X_tr=X_tr,
         y_tr=y_tr,
         y_raw=y_raw,
@@ -856,12 +876,8 @@ def apply_gapfill_ts(
 ) -> pd.DataFrame:
     """
     Apply the fitted model to a full dataframe and attach uncertainty terms.
-
-    Adds columns:
-      - {prefix}_yhat
-      - {prefix}_sigmaEns
-      - {prefix}_sigmaResid
-      - {prefix}_sigmaGF
+    Uses pre-trained ensemble models from `fit.ensemble_models` 
+    instead of retraining them.
     """
     _check_columns(df_pred, fit.feature_cols, name="df_pred")
 
@@ -876,26 +892,33 @@ def apply_gapfill_ts(
     sigma_gf = np.full(len(out), np.nan, dtype=float)
 
     if ok.sum() > 0:
-        yhat_ok = fit.model_final.predict(X_full.loc[ok]).astype(float)
+        X_ok = X_full.loc[ok]
+
+        # 1. Main Prediction
+        yhat_ok = fit.model_final.predict(X_ok).astype(float)
         yhat_ok = _maybe_inverse(fit.inv_y, yhat_ok)
         yhat[ok] = _as_1d_float(yhat_ok)
 
-        preds_ens = ensemble_predict(
-            model_factory=fit.model_factory,
-            X_train=fit.X_tr,
-            y_train=fit.y_tr,
-            X_pred=X_full.loc[ok],
-            n_models=fit.n_ens,
-            block_len=fit.ens_block_len,
-            random_state=fit.random_state,
-            inv_y=fit.inv_y,
-        )
-        sigma_ens_ok = np.nanstd(preds_ens, axis=0, ddof=1)
-        sigma_ens[ok] = _as_1d_float(sigma_ens_ok)
+        # 2. Ensemble Prediction (using pre-trained models)
+        if fit.ensemble_models:
+            n_models = len(fit.ensemble_models)
+            preds_ens = np.full((n_models, len(X_ok)), np.nan, dtype=float)
+            
+            for i, m in enumerate(fit.ensemble_models):
+                p = m.predict(X_ok).astype(float)
+                p = _maybe_inverse(fit.inv_y, p)
+                preds_ens[i, :] = _as_1d_float(p)
 
+            sigma_ens_ok = np.nanstd(preds_ens, axis=0, ddof=1)
+            sigma_ens[ok] = _as_1d_float(sigma_ens_ok)
+        else:
+            # Fallback if no ensemble was trained (shouldn't happen with default settings)
+            sigma_ens[ok] = 0.0
+
+        # 3. Residual Uncertainty
         sigma_resid_ok = fit.resid_model.sigma(yhat_ok)
         sigma_resid[ok] = _as_1d_float(sigma_resid_ok)
-
+        # 4. Combined Uncertainty
         sigma_gf[ok] = combine_gapfill_sigma(sigma_ens_ok, sigma_resid_ok, min_sigma=min_sigma)
 
     out[f"{prefix}_yhat"] = yhat
@@ -904,3 +927,222 @@ def apply_gapfill_ts(
     out[f"{prefix}_sigmaGF"] = sigma_gf
 
     return out
+
+
+# -----------------------------------------------------------------------------
+# High-Level Reusable Workflows
+# -----------------------------------------------------------------------------
+
+def merge_gapfill_results(
+    main_df: pd.DataFrame,
+    views: List[Tuple[str, pd.DataFrame, pd.DataFrame]],
+    target_flux: str,
+    model_type: str,
+    ustar_cut: str, # or whatever default
+    random_err_col: str,
+    prefix: str = "GF",
+    qc_levels: List[str] = ["QCF", "QCF0"],
+) -> pd.DataFrame:
+    """
+    Merges gap-filling predictions into the main dataframe, creating 
+    Total Uncertainty columns and boolean flags.
+    
+    Parameters
+    ----------
+    main_df : pd.DataFrame
+        The master dataframe to copy and fill.
+    views : list of tuples
+        Format: [("view_name", df_view_input, pred_df_output), ...]
+    target_flux : str
+        e.g., "FN2O"
+    model_type : str
+        e.g., "XGBoost"
+    ustar_cut : str
+        String representation of ustar cut (e.g. "0.15" or "CUT_50") used in col names.
+    """
+    df_final = main_df.copy()
+    target_base_root = f"{target_flux}_L3.3_{ustar_cut}"
+    
+    for view_name, df_view, pred_df in views:
+        # Save Pure Model Outputs (Once per view)
+        base_name = f"{target_flux}_{view_name}_gf{model_type}"
+        col_pred_only = f"{base_name}_yhat"
+        col_sigmaEns  = f"{base_name}_sigmaEns"
+        col_sigmaRes  = f"{base_name}_sigmaResid"
+        col_sigmaGF   = f"{base_name}_sigmaGF"
+        # Use reindex to handle potential index mismatches safely
+        df_final[col_pred_only] = pred_df[f"{prefix}_yhat"].reindex(df_final.index)
+        df_final[col_sigmaEns]  = pred_df[f"{prefix}_sigmaEns"].reindex(df_final.index)
+        df_final[col_sigmaRes]  = pred_df[f"{prefix}_sigmaResid"].reindex(df_final.index)
+        df_final[col_sigmaGF]   = pred_df[f"{prefix}_sigmaGF"].reindex(df_final.index)
+        # Save Merged (Obs + GF) versions (Per QC level)
+        for qc in qc_levels:
+            obs_col = f"{target_base_root}_{qc}"
+            # Get aligned series
+            y_obs = df_view[obs_col].astype(float)
+            y_hat = pred_df[f"{prefix}_yhat"]
+            # Determine gaps
+            is_gap = y_obs.isna() & y_hat.notna()
+            # Define Output Names
+            obs_col_out   = f"{target_base_root}_{qc}_{view_name}"
+            obs_rand_err_out = f"{target_base_root}_{qc}_{view_name}_rand_err" # e.g. "..._QCF_rand_err"
+            gf_base_name  = f"{target_base_root}_{qc}_{view_name}_gf{model_type}"
+            col_filled    = gf_base_name
+            col_isfilled  = f"{gf_base_name}_ISFILLED"
+            col_total_unc = f"{gf_base_name}_total_unc"
+            # --- Assignments ---
+            # Observed Flux (masked to view/parcel)
+            df_final[obs_col_out] = y_obs
+            # Observed Random Error
+            df_final[obs_rand_err_out] = df_view[random_err_col]
+            # Gap-Filled Flux
+            df_final[col_filled] = y_obs.where(~is_gap, y_hat)
+            # Boolean Flag
+            df_final[col_isfilled] = is_gap.astype(int)
+            # Total uncertainty: combine random obs error and gapfilling uncertainty
+            sigma_obs = df_view[random_err_col]
+            sigma_gf = pred_df[f"{prefix}_sigmaGF"]
+            df_final[col_total_unc] = sigma_obs.where(~is_gap, sigma_gf) 
+
+    return df_final
+
+
+def plot_gapfill_dashboard(
+    df: pd.DataFrame,
+    periods: List[Tuple[str, str, str]],
+    target_flux: str,
+    model_type: str,
+    ustar_cut: str,  # e.g. "CUT_50" or "0.15"
+    qc_levels: List[str] = ["QCF", "QCF0"],
+    parcels: List[str] = ["A", "B"]
+):
+    """
+    Generates the standard 4-row dashboard (Predicted, Obs, GF-Parcel, GF-Footprint)
+    for the specified periods.
+    """
+    import matplotlib.pyplot as plt
+
+    # --- Internal Helper: Plotting Logic ---
+    def _plot_flux_with_uncertainty(
+        ax: plt.Axes,
+        data: pd.DataFrame,
+        col_val: str,
+        col_unc: Optional[str] = None,
+        label: Optional[str] = None,
+        cumulative: bool = False,
+        sigma_scale: float = 1.96,
+        alpha_fill: float = 0.2
+    ):
+        if col_val not in data.columns:
+            return
+
+        y = data[col_val]
+        if label is None:
+            label = col_val
+
+        # Handle Cumulative vs Instantaneous
+        if cumulative:
+            y_plot = y.cumsum()
+        else:
+            y_plot = y
+
+        # Plot Main Line
+        line, = ax.plot(data.index, y_plot, label=label, alpha=0.8)
+        color = line.get_color()
+
+        # Plot Uncertainty Band (if available)
+        if col_unc and col_unc in data.columns:
+            sigma = data[col_unc].fillna(0.0)
+
+            if cumulative:
+                # Propagate error: sqrt(sum(sigma^2))
+                sigma_plot = np.sqrt((sigma**2).cumsum())
+            else:
+                sigma_plot = sigma
+
+            upper = y_plot + sigma_scale * sigma_plot
+            lower = y_plot - sigma_scale * sigma_plot
+
+            ax.fill_between(
+                data.index, lower, upper, 
+                color=color, alpha=alpha_fill, linewidth=0
+            )
+
+    # --- Internal Helper: Naming Resolution ---
+    def _tgt(qc): 
+        return f'{target_flux}_L3.3_{ustar_cut}_{qc}'
+
+    def _get_sigma(c):
+        if c.endswith("_yhat"): return c.replace("_yhat", "_sigmaGF")
+        if "_gf" in c: return c + "_total_unc"
+        return None
+
+    # --- Main Loop ---
+    for start, end, label in periods:
+        period_df = df.loc[pd.to_datetime(start):pd.to_datetime(end)]
+        if period_df.empty:
+            print(f"No data for period {label} ({start}-{end})")
+            continue
+
+        rows = [] 
+        
+        # 1. PREDICTED (Model Only) - Filter specifically for parcel predictions
+        cols = [f"{target_flux}_parcel{p}_gf{model_type}_yhat" for p in parcels]
+        cols = [c for c in cols if c in period_df.columns]
+        rows.append((cols, "Predicted (Model Only)"))
+        
+        # 2. OBSERVED
+        for qc in qc_levels:
+            _t = _tgt(qc)
+            cols = [f"{_t}_parcel{p}" for p in parcels if f"{_t}_parcel{p}" in period_df.columns]
+            cols = [c for c in cols if c in period_df.columns]
+            rows.append((cols, f"Observed [{qc}]"))
+            
+        # 3. GAP-FILLED (Parcels)
+        for qc in qc_levels:
+            _t = _tgt(qc)
+            cols = [f"{_t}_parcel{p}_gf{model_type}" for p in parcels]
+            cols = [c for c in cols if c in period_df.columns]
+            rows.append((cols, f"Gap-filled [{qc}]"))
+            
+        # 4. GAP-FILLED (Full-Footprint)
+        cols = [c for c in [f"{_tgt(qc)}_footprint_gf{model_type}" for qc in qc_levels] if c in period_df.columns]
+        rows.append((cols, f"Gap-filled (Full-Footprint)"))
+
+        # --- Plot Configuration ---
+        nrows = len(rows)
+        if nrows == 0: continue
+        
+        fig, axes = plt.subplots(nrows, 2, figsize=(15, 3*nrows), sharex='col')
+        if nrows == 1: axes = axes.reshape(1, -1)
+
+        for r, (cols, title) in enumerate(rows):
+            # Left Column: Raw Time Series
+            ax_raw = axes[r, 0]
+            for col in cols:
+                _plot_flux_with_uncertainty(
+                    ax_raw, period_df, 
+                    col_val=col, 
+                    col_unc=_get_sigma(col), 
+                    cumulative=False
+                )
+            ax_raw.set_title(title, fontsize=10, fontweight='bold')
+            ax_raw.legend(fontsize=8, loc='upper right')
+            ax_raw.grid(True, alpha=0.3)
+
+            # Right Column: Cumulative
+            ax_cum = axes[r, 1]
+            for col in cols:
+                _plot_flux_with_uncertainty(
+                    ax_cum, period_df, 
+                    col_val=col, 
+                    col_unc=_get_sigma(col), 
+                    cumulative=True
+                )
+            ax_cum.set_title(f"{title} — Cumulative", fontsize=10, fontweight='bold')
+            ax_cum.legend(fontsize=8, loc='upper left')
+            ax_cum.grid(True, alpha=0.3)
+
+        fig.suptitle(f"{label} ({start} → {end})", y=0.995, fontsize=14)
+        plt.tight_layout()
+        plt.show()
