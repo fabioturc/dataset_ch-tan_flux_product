@@ -31,8 +31,8 @@ XG_Partition <- function(data, date_start, date_end) {
       sw_in,
       ta, 
       rh, 
-      NEE_L3.3_CUT_50_QCF_gfXGBoost, 
-      NEE_L3.3_CUT_50_QCF0_gfXGBoost
+      NEE_L3.3_CUT_50_QCF_footprint_gfXGBoost, 
+      NEE_L3.3_CUT_50_QCF0_footprint_gfXGBoost
   )
   
   cat("Data selected \n")
@@ -56,8 +56,8 @@ XG_Partition <- function(data, date_start, date_end) {
   EddyData.F <- EddyData.F %>% 
     mutate(
     TIMESTAMP = df_XG$TIMESTAMP_END,
-    NEE_QCF = as.numeric(as.character(df_XG$NEE_L3.3_CUT_50_QCF_gfXGBoost)),
-    NEE_QCF0 = as.numeric(as.character(df_XG$NEE_L3.3_CUT_50_QCF0_gfXGBoost)),
+    NEE_QCF = as.numeric(as.character(df_XG$NEE_L3.3_CUT_50_QCF_footprint_gfXGBoost)),
+    NEE_QCF0 = as.numeric(as.character(df_XG$NEE_L3.3_CUT_50_QCF0_footprint_gfXGBoost)),
     Ustar = as.numeric(as.character(df_XG$USTAR)),
     Rg = as.numeric(as.character(df_XG$sw_in)),
     Tair = as.numeric(as.character(df_XG$ta)),
@@ -142,7 +142,7 @@ XG_Partition <- function(data, date_start, date_end) {
   EddyProc.C$sPlotFingerprint('Reco_QCF0', Dir = plots_path)
   EddyProc.C$sPlotFingerprint('Reco_DT_QCF0', Dir = plots_path)
   
-  cat("Regular Partitioning done \n")
+  cat("Partitioning done \n")
 
 }
 
