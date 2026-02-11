@@ -6,7 +6,7 @@ output:
 
 |                                    |
 |------------------------------------|
-| Title: "Ustar threshold detection" |
+| Title: "Ustar threshold detection and MDS gapfilling" |
 | Author: "Fabio Turco"              |
 | Date: "2024-04-24"                 |
 | Output:                            |
@@ -20,7 +20,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Introduction
 
 **Script to detect seasonal Ustar thresholds from level-3.2 fluxes.\
-**In addition, the script is doing a preliminary MDS gap-filling of NEE which won't be used in the next steps as machine learning approaches have been shown to be less biased.
+**In addition, the script is conducting MDS gap-filling of NEE, LE and H.\
+**Finally, night-time partitioning is conducted for 16, 50, and 84 NEE CUTs.
 
 HIGHEST QUALITY ONLY (QCF=0) FLUXES (\_L3.1_L3.2_QCF0), quality-controlled with Level-2 and Level-3.2 flags, including Level-3.1 storage correction are used for the ustar detection.
 
@@ -55,7 +56,7 @@ filedata$TIMESTAMP_END <- as.POSIXct(filedata$TIMESTAMP_END, tz = "Etc/GMT-1")
 ```
 ## TIME INTERVAL
 ```{r}
-filedata <- filedata %>% filter(TIMESTAMP_END >= as.POSIXct('2023-11-07 17:00:00', tz = 'Etc/GMT-1')
+filedata <- filedata %>% filter(TIMESTAMP_END >= as.POSIXct('2023-10-18 12:00:00', tz = 'Etc/GMT-1')
                                 & TIMESTAMP_END <= as.POSIXct('2025-06-05 01:00:00', tz = 'Etc/GMT-1'))
 
 summary(filedata[c('TIMESTAMP_END', 'NEE_L3.1_L3.2_QCF', 'sw_in', 'ta', 'vpd')], 3)
@@ -98,7 +99,7 @@ head(EddyProc.C$sDATA)
 
 Seasons defined based on the management events and growing seasons in 2022 and 2023:
 
--   on 311 2023 starts of measurements
+-   on 291 2023 wheat sowing
 -   on 122 2024 wheat height >  30 cm
 -   on 208 2024 wheat harvested
 -   on 259 2024 grassland established 
@@ -106,7 +107,7 @@ Seasons defined based on the management events and growing seasons in 2022 and 2
 
 ```{r}
 y <- c(2023, 2024, 2024, 2024, 2025)
-s <- c(311, 122, 208, 259, 91)
+s <- c(291, 122, 208, 259, 91)
 seasonStarts <- as.data.frame(cbind(s,y))
 seasonFactor <- usCreateSeasonFactorYdayYear(EddyData.F$TIMESTAMP, starts=seasonStarts)
 seasonStartsDate <-fConvertTimeToPosix(data.frame(Year=seasonStarts[, 2],

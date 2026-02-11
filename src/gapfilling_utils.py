@@ -46,6 +46,15 @@ def _rmse(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     return float(np.sqrt(np.mean((y_true[m] - y_pred[m]) ** 2)))
 
 
+def _mae(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    y_true = _as_1d_float(y_true)
+    y_pred = _as_1d_float(y_pred)
+    m = np.isfinite(y_true) & np.isfinite(y_pred)
+    if m.sum() == 0:
+        return float("nan")
+    return float(np.mean(np.abs(y_true[m] - y_pred[m])))
+
+
 def _r2(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     y_true = _as_1d_float(y_true)
     y_pred = _as_1d_float(y_pred)
@@ -166,20 +175,38 @@ def infer_cv_block_size_from_gaps(
     *,
     quantile: float = 0.8,
     fallback: int = 6,
+    min_block: int = 1,
 ) -> int:
     if not (0.0 < quantile < 1.0):
-        raise ValueError('quantile must be in (0, 1)')
-    isna = s.isna()
+        raise ValueError("quantile must be in (0, 1)")
+    
+    isna = s.isna().to_numpy()
+    n = int(isna.size)
+    if n == 0:
+        return int(fallback)
+
+    # Observed fraction: how much the series gets "compressed" after dropna
+    f_obs = float((~isna).mean())
+    if f_obs <= 0:
+        return int(fallback)
+
     if not bool(isna.any()):
-        return int(fallback)
-    run_id = isna.ne(isna.shift()).cumsum()
-    run_isna = isna.groupby(run_id).first()
-    run_len = isna.groupby(run_id).size()
+        return int(max(min_block, fallback))
+
+    # Run-length encoding for NA runs (gap lengths in ORIGINAL index units)
+    run_id = pd.Series(isna).ne(pd.Series(isna).shift()).cumsum()
+    run_isna = pd.Series(isna).groupby(run_id).first()
+    run_len = pd.Series(isna).groupby(run_id).size()
     gaps = run_len[run_isna]
+
     if gaps.empty:
-        return int(fallback)
-    qv = float(gaps.quantile(quantile))
-    return int(max(1, int(np.ceil(qv))))
+        return int(max(min_block, fallback))
+
+    qv = float(gaps.quantile(quantile))  # in original steps
+    # Convert to approximate equivalent in the DROPNA/compressed series
+    block_clean = int(np.ceil(qv * f_obs))
+
+    return int(max(min_block, block_clean))
 
 
 # -----------------------------------------------------------------------------
@@ -190,27 +217,38 @@ def build_df_for_parcel(data_main, target_flux, letter, selected_features, add_t
     if "parcel" not in data_main.columns:
         raise KeyError("data_main must contain a 'parcel' column for masking.")
 
-    cols = set(data_main.columns)
-    df = pd.DataFrame(index=data_main.index)
-
+    # Collect data in a dictionary (Prevents fragmentation)
+    data_to_build = {}
+    # Check available columns once for speed
+    cols_available = set(data_main.columns)
     for f in selected_features:
         if f == "trt":
             continue
         fp = f"{f}_parcel{letter}"
-        if fp in cols:
-            df[f] = data_main[fp]
-        elif f in cols:
-            df[f] = data_main[f]
+        # Select the correct series based on availability
+        if fp in cols_available:
+            data_to_build[f] = data_main[fp]
+        elif f in cols_available:
+            data_to_build[f] = data_main[f]
         else:
             raise KeyError(f"Missing feature '{f}' (neither '{fp}' nor '{f}' exists).")
 
+    # Handle 'trt' feature
     if add_trt and "trt" in selected_features:
-        df["trt"] = 0 if letter == "A" else 1
+        # Create a constant series for the whole index
+        val = 0 if letter == "A" else 1
+        data_to_build["trt"] = pd.Series(val, index=data_main.index)
+    # Create the DataFrame ONCE
+    df = pd.DataFrame(data_to_build, index=data_main.index)
 
+    # Handle Flux Columns (Bulk add)
     mask = data_main["parcel"].eq(letter)
     flux_cols = [c for c in data_main.columns if c.startswith(target_flux)]
     if flux_cols:
-        df[flux_cols] = data_main[flux_cols].where(mask)
+        # Create the masked flux data
+        df_flux = data_main[flux_cols].where(mask)
+        # Concatenate horizontally (safe against fragmentation)
+        df = pd.concat([df, df_flux], axis=1)
 
     return df
 
@@ -601,14 +639,19 @@ def _plot_internal_diagnostics(
     """
     import matplotlib.pyplot as plt
     from scipy.stats import linregress
+    import os
 
     # Create 2x2 Grid
     fig, axes = plt.subplots(2, 2, figsize=(16, 10))
     
     # --- Plot 1: Obs vs Pred (Global OOF) ---
     ax1 = axes[0, 0]
+    # CALCULATE METRICS 
+    rmse_val = _rmse(y_obs, y_pred)
+    mae_val  = _mae(y_obs, y_pred)
+    r2_score_val = _r2(y_obs, y_pred)
+    # Prep plot data
     df_plot = pd.DataFrame({"Obs": y_obs, "Pred": y_pred}).dropna()
-    
     if len(df_plot) > 1:
         x, y = df_plot["Pred"], df_plot["Obs"]
         rmse = np.sqrt(np.mean((y - x)**2))
@@ -617,9 +660,9 @@ def _plot_internal_diagnostics(
         ax1.scatter(x, y, alpha=0.2, s=10, c='k', label='Data')
         min_v, max_v = min(x.min(), y.min()), max(x.max(), y.max())
         ax1.plot([min_v, max_v], [min_v, max_v], 'k--', lw=1)
-        ax1.plot(np.array([min_v, max_v]), slope * np.array([min_v, max_v]) + intercept, 'r-', lw=2, label=f"R²={r_val**2:.3f}")
+        ax1.plot(np.array([min_v, max_v]), slope * np.array([min_v, max_v]) + intercept, 'r-', lw=2, label=f"Fit (Pearson r={r_val:.2f})")
         
-        ax1.set_title(f"1. Global Performance (OOF)\nRMSE={rmse:.4f}")
+        ax1.set_title(f"1. Global Performance (OOF)\nRMSE={rmse_val:.4f} | MAE={mae_val:.4f} | R²={r2_score_val:.3f}")
         ax1.set_xlabel("Predicted")
         ax1.set_ylabel("Observed")
         ax1.legend()
@@ -683,6 +726,9 @@ def _plot_internal_diagnostics(
     ax4.set_ylabel(f"Cum. {target_name}")
     ax4.legend()
     plt.tight_layout()
+    save_path = f'plots/gapfilling_diagnostics_{target_name}.png'
+    os.makedirs(os.path.dirname(save_path), exist_ok=True) # create directory if it doesn't exist
+    plt.savefig(save_path, dpi=300)
     plt.show()
 
 
@@ -776,6 +822,19 @@ def fit_gapfill_ts(
         inv_y=inv_y
     )
 
+    # Calculate and print performance metrics 
+    rmse_score = _rmse(y_raw, yhat_oof_raw)
+    mae_score = _mae(y_raw, yhat_oof_raw) 
+    r2_score = _r2(y_raw, yhat_oof_raw)
+    if verbose:
+        print("-" * 40)
+        print(f"Gapfilling performance (CV-Ensemble OOF):")
+        print(f"  Target: {target_col}")
+        print(f"  RMSE:   {rmse_score:.4f}")
+        print(f"  MAE:    {mae_score:.4f}")
+        print(f"  R2:     {r2_score:.4f}")
+        print("-" * 40)
+
     resid_model = fit_residual_scale(
         y_obs_raw=y_raw,
         yhat_oof_raw=yhat_oof_raw,
@@ -836,43 +895,39 @@ def apply_gapfill_ts(
 
     out = df_pred.copy()
     X_full = out[fit.feature_cols].copy()
-    ok = X_full.notna().all(axis=1).to_numpy(bool)
 
     yhat = np.full(len(out), np.nan, dtype=float)
     sigma_ens = np.full(len(out), np.nan, dtype=float)
     sigma_resid = np.full(len(out), np.nan, dtype=float)
     sigma_gf = np.full(len(out), np.nan, dtype=float)
 
-    if ok.sum() > 0:
-        X_ok = X_full.loc[ok]
+    # Main Prediction
+    yhat = fit.model_final.predict(X_full).astype(float)
+    yhat = _maybe_inverse(fit.inv_y, yhat)
+    yhat = _as_1d_float(yhat)
 
-        # 1. Main Prediction
-        yhat_ok = fit.model_final.predict(X_ok).astype(float)
-        yhat_ok = _maybe_inverse(fit.inv_y, yhat_ok)
-        yhat[ok] = _as_1d_float(yhat_ok)
-
-        # 2. Ensemble Prediction (using CV models)
-        if fit.ensemble_models:
-            n_models = len(fit.ensemble_models)
-            preds_ens = np.full((n_models, len(X_ok)), np.nan, dtype=float)
-            
-            for i, m in enumerate(fit.ensemble_models):
-                p = m.predict(X_ok).astype(float)
-                p = _maybe_inverse(fit.inv_y, p)
-                preds_ens[i, :] = _as_1d_float(p)
-
-            # Standard Deviation of the ensemble predictions
-            sigma_ens_ok = np.nanstd(preds_ens, axis=0, ddof=1)
-            sigma_ens[ok] = _as_1d_float(sigma_ens_ok)
-        else:
-            sigma_ens[ok] = 0.0
-
-        # 3. Residual Uncertainty
-        sigma_resid_ok = fit.resid_model.sigma(yhat_ok)
-        sigma_resid[ok] = _as_1d_float(sigma_resid_ok)
+    # Ensemble Prediction (using CV models)
+    if fit.ensemble_models:
+        n_models = len(fit.ensemble_models)
+        preds_ens = np.full((n_models, len(X_full)), np.nan, dtype=float)
         
-        # 4. Combined
-        sigma_gf[ok] = combine_gapfill_sigma(sigma_ens_ok, sigma_resid_ok, min_sigma=min_sigma)
+        for i, m in enumerate(fit.ensemble_models):
+            p = m.predict(X_full).astype(float)
+            p = _maybe_inverse(fit.inv_y, p)
+            preds_ens[i, :] = _as_1d_float(p)
+
+        # Standard Deviation of the ensemble predictions
+        sigma_ens = np.nanstd(preds_ens, axis=0, ddof=1)
+        sigma_ens = _as_1d_float(sigma_ens)
+    else:
+        sigma_ens = 0.0
+
+    # Residual Uncertainty
+    sigma_resid = fit.resid_model.sigma(yhat)
+    sigma_resid = _as_1d_float(sigma_resid)
+    
+    # Combined
+    sigma_gf = combine_gapfill_sigma(sigma_ens, sigma_resid, min_sigma=min_sigma)
 
     out[f"{prefix}_yhat"] = yhat
     out[f"{prefix}_sigmaEns"] = sigma_ens
@@ -901,25 +956,18 @@ def merge_gapfill_results(
     qc_levels: List[str] = ["QCF", "QCF0"],
 ) -> pd.DataFrame:
     """Merges gap-filling predictions into main dataframe."""
-    df_final = main_df.copy()
+    df_final = pd.DataFrame(index=main_df.index)
     target_base_root = f"{target_flux}_L3.3_{ustar_cut}"
     
     for view_name, df_view, pred_df in views:
-        base_name = f"{target}_{view_name}_gf{model_type}"
-        col_pred_only = f"{base_name}_yhat"
-        col_sigmaEns  = f"{base_name}_sigmaEns"
-        col_sigmaRes  = f"{base_name}_sigmaResid"
-        col_sigmaGF   = f"{base_name}_sigmaGF"
-        
-        df_final[col_pred_only] = pred_df[f"{prefix}_yhat"].reindex(df_final.index)
-        df_final[col_sigmaEns]  = pred_df[f"{prefix}_sigmaEns"].reindex(df_final.index)
-        df_final[col_sigmaRes]  = pred_df[f"{prefix}_sigmaResid"].reindex(df_final.index)
-        df_final[col_sigmaGF]   = pred_df[f"{prefix}_sigmaGF"].reindex(df_final.index)
-        
         for qc in qc_levels:
             obs_col = f"{target_base_root}_{qc}"
             y_obs = df_view[obs_col].astype(float)
             y_hat = pred_df[f"{prefix}_yhat"]
+            sigma_obs = df_view[random_err_col]
+            sigma_ens = pred_df[f"{prefix}_sigmaEns"]
+            sigma_resid = pred_df[f"{prefix}_sigmaResid"]
+            sigma_gf = pred_df[f"{prefix}_sigmaGF"]
             is_gap = y_obs.isna() & y_hat.notna()
             
             obs_col_out   = f"{target_base_root}_{qc}_{view_name}"
@@ -927,14 +975,19 @@ def merge_gapfill_results(
             col_filled    = gf_base_name
             col_isfilled  = f"FLAG_{gf_base_name}_ISFILLED"
             col_total_unc = f"{gf_base_name}_total_unc"
+            col_sigmaEns = f"{gf_base_name}_sigmaEns"
+            col_sigmaResid = f"{gf_base_name}_sigmaResid"
+            col_sigmaGF = f"{gf_base_name}_sigmaGF"
+            col_pred_only = f"{gf_base_name}_yhat"
             
             df_final[obs_col_out] = y_obs
+            df_final[col_pred_only] = y_hat
             df_final[col_filled] = y_obs.where(~is_gap, y_hat)
             df_final[col_isfilled] = is_gap.astype(int)
-            
-            sigma_obs = df_view[random_err_col]
-            sigma_gf = pred_df[f"{prefix}_sigmaGF"]
-            df_final[col_total_unc] = sigma_obs.where(~is_gap, sigma_gf) 
+            df_final[col_sigmaGF] = sigma_ens
+            df_final[col_sigmaResid] = sigma_resid
+            df_final[col_sigmaEns] = sigma_gf
+            df_final[col_total_unc] = sigma_obs.where(~is_gap, sigma_gf)  
 
     return df_final
 
