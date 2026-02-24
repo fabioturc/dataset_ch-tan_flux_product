@@ -147,5 +147,5 @@ XG_Partition <- function(data, date_start, date_end) {
 }
 
 # RUN FUNCTION------------------------------------------------------------------
-XG_Partition(filedata, '2023-11-07', '2025-06-05')
+XG_Partition(filedata, '2023-10-18', '2025-06-05')
 

@@ -1,9 +1,0 @@
-ta
-timesince_soil_preparation
-n_decay_logistic
-GPP_NT_CUT_50_gfXG_QCF_lag48h
-ts_0.3_gfXG_lag48h
-ts_0.3_gfXG_lag72h
-wfps_0.15_gfXG_lag72h
-wfps_0.05_gfXG_diff24h
-wfps_0.05_gfXG_diff48h
